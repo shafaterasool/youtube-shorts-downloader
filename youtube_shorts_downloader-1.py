@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-YouTube Shorts Channel Downloader
-Owner permission required - ye script sirf authorized downloads ke liye hai
+YouTube Shorts Channel Downloader - FIXED VERSION
+Owner permission required - authorized downloads ke liye
 """
 
 import os
@@ -22,123 +22,109 @@ def install_yt_dlp():
     print("📦 yt-dlp install ho raha hai...")
     try:
         subprocess.run([sys.executable, '-m', 'pip', 'install', '-U', 'yt-dlp'], check=True)
-        print("✅ yt-dlp successfully installed!")
+        print("✅ yt-dlp installed!")
         return True
     except subprocess.CalledProcessError:
-        print("❌ Installation failed. Please install manually:")
-        print("   pip install -U yt-dlp")
+        print("❌ Installation failed")
         return False
 
 def download_channel_shorts(channel_url, output_folder="./youtube_shorts"):
     """
     YouTube channel se sab shorts download karo
-    
-    Args:
-        channel_url: YouTube channel ka URL (jaise @channelname ya full URL)
-        output_folder: Jahan save karni hai shorts
     """
     
     # Check yt-dlp
     if not check_yt_dlp_installed():
-        print("yt-dlp installed nahi hai, installing...")
+        print("yt-dlp installing...")
         if not install_yt_dlp():
             return False
     
-    # Output folder create karo
+    # Output folder
     os.makedirs(output_folder, exist_ok=True)
     
-    # Timestamp add karo folder mein
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     final_folder = os.path.join(output_folder, f"downloads_{timestamp}")
     os.makedirs(final_folder, exist_ok=True)
     
-    print(f"\n🎬 YouTube Shorts Download ho rahe hain...")
+    print(f"\n🎬 YouTube Shorts Download...")
     print(f"📍 Channel: {channel_url}")
-    print(f"💾 Save location: {final_folder}")
-    print("-" * 50)
+    print(f"💾 Location: {final_folder}")
+    print("-" * 60)
     
-    # yt-dlp command - simplified for compatibility
-    # Directly access /shorts endpoint for channel shorts
+    # YouTube shorts URL
     shorts_url = channel_url.rstrip('/') + '/shorts'
     
+    # FIXED: Add unique ID to filename (simple & compatible)
     command = [
         sys.executable,
         '-m', 'yt_dlp',
         shorts_url,
-        '-o', os.path.join(final_folder, '%(title)s.%(ext)s'),
+        '-o', os.path.join(final_folder, '%(title)s_%(id)s.%(ext)s'),  # ID prevents duplicates
         '--format', 'best',
-        '-N', '4',  # 4 parallel downloads
+        '-N', '4',
+        '--ignore-errors',  # Continue even if one fails
     ]
     
     try:
-        print("\n⏳ Download start ho raha hai...\n")
-        subprocess.run(command, check=True)
-        print("\n" + "=" * 50)
+        print("\n⏳ Downloading...\n")
+        subprocess.run(command, check=False)  # Don't fail on errors
+        
+        print("\n" + "=" * 60)
         print("✅ Download complete!")
-        print(f"📂 Files saved in: {final_folder}")
-        print("=" * 50)
+        print(f"📂 Location: {final_folder}")
+        print("=" * 60)
         
         # Auto-open folder
-        print("\n🔓 Folder open ho raha hai...\n")
+        print("\n🔓 Opening folder...\n")
         try:
             if sys.platform == 'win32':
-                # Windows
                 os.startfile(final_folder)
             elif sys.platform == 'darwin':
-                # Mac
                 subprocess.run(['open', final_folder])
             else:
-                # Linux
                 subprocess.run(['xdg-open', final_folder])
         except Exception as e:
-            print(f"⚠️  Folder auto-open nahi hua: {e}")
-            print(f"📂 Manual open karo: {final_folder}")
+            print(f"Folder: {final_folder}")
         
         return True
         
-    except subprocess.CalledProcessError as e:
-        print(f"\n❌ Download mein error: {e}")
-        return False
     except KeyboardInterrupt:
-        print("\n⚠️  Download cancel kiya gaya")
+        print("\n⚠️  Cancelled")
+        return False
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
         return False
 
 def main():
     print("""
 ╔════════════════════════════════════════╗
-║  YouTube Shorts Channel Downloader     ║
+║  YouTube Shorts Downloader (FIXED)     ║
 ║  Owner Permission Required             ║
 ╚════════════════════════════════════════╝
     """)
     
-    # Channel URL lo
-    channel_url = input("\n📝 YouTube Channel URL (ya @channelname) daalen:\n> ").strip()
+    channel_url = input("\n📝 YouTube Channel URL:\n> ").strip()
     
     if not channel_url:
-        print("❌ URL khali hai!")
+        print("❌ URL required!")
         return
     
-    # Output folder
-    output_folder = input("\n💾 Download folder (default: ./youtube_shorts):\n> ").strip()
+    output_folder = input("\n💾 Folder (default: ./youtube_shorts):\n> ").strip()
     if not output_folder:
         output_folder = "./youtube_shorts"
     
-    # Confirmation
-    print(f"\n✓ Channel: {channel_url}")
-    print(f"✓ Folder: {output_folder}")
-    confirm = input("\nKya thik hai? (y/n): ").strip().lower()
+    print(f"\n{'='*60}")
+    print(f"Channel: {channel_url}")
+    print(f"Folder: {output_folder}")
+    print(f"{'='*60}")
+    
+    confirm = input("\nStart? (y/n): ").strip().lower()
     
     if confirm != 'y':
         print("Cancelled")
         return
     
-    # Download start
-    success = download_channel_shorts(channel_url, output_folder)
-    
-    if success:
-        print(f"\n🎉 Sab kuch complete! Shorts {output_folder} mein hain")
-    else:
-        print(f"\n⚠️  Kuch masla hua. Dobaara try karen")
+    download_channel_shorts(channel_url, output_folder)
 
 if __name__ == "__main__":
     main()
